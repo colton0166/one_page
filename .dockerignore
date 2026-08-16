@@ -1,0 +1,8 @@
+# 這些不需要放進網站映像檔
+Dockerfile
+.dockerignore
+.git
+.gitignore
+*.py
+*.gif
+*.md

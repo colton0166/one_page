@@ -1,0 +1,6 @@
+# 文字檔一律用 LF 存放，避免 Windows 換行造成 Linux 上出問題
+* text=auto eol=lf
+
+# 圖片是二進位檔，不要做任何換行轉換
+*.webp binary
+*.gif  binary

@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>中元普渡法會</title>
+<style>
+  /* ================= 配色設定：想換顏色改這裡 ================= */
+  :root{
+    --red:#a3231f;         /* 主色（深紅） */
+    --red-dark:#7d1a17;
+    --gold:#c99a3f;        /* 金 */
+    --cream:#fdf8f0;       /* 背景米色 */
+    --paper:#ffffff;
+    --ink:#2b2320;         /* 主要文字 */
+    --ink-dim:#7a6f68;     /* 次要文字 */
+    --line:#e7dccb;
+    --radius:14px;
+    --maxw:1100px;
+    --stripw:800px;        /* 圖片長條在電腦上的最大寬度，想更寬就把數字調大 */
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--cream);color:var(--ink);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,"Segoe UI",sans-serif;
+    line-height:1.75;-webkit-font-smoothing:antialiased;
+    padding-bottom:82px; /* 留給底部購物車列 */
+  }
+  img{display:block;max-width:100%;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 18px;}
+  h2.sec{
+    text-align:center;font-size:clamp(1.4rem,4vw,2rem);margin:0 0 6px;letter-spacing:.02em;
+  }
+  h2.sec + .sub{text-align:center;color:var(--ink-dim);margin:0 0 28px;font-size:.95rem;}
+  .sec-wrap{padding:52px 0;}
+
+  /* ================= 頂部跑馬燈促銷條 ================= */
+  .promo{
+    background:var(--red);color:#fff;text-align:center;
+    font-weight:700;letter-spacing:.05em;padding:9px 14px;font-size:.95rem;
+    position:sticky;top:0;z-index:30;
+  }
+
+  /* ================= 圖片長條：一張接一張直落、中間無縫 ================= */
+  .strip{
+    max-width:var(--stripw);   /* 電腦上不會拉到太寬；手機自動滿版 */
+    margin:0 auto;
+    background:var(--paper);
+    font-size:0;               /* 消掉圖片之間的空隙 */
+  }
+  .shot{display:block;}
+  .shot .frame{
+    display:block;
+    aspect-ratio:640/1138;     /* 圖片還沒載入時的暫定高度（＝你目前圖片的比例） */
+    background:linear-gradient(100deg,#f3ece1 30%,#faf5ec 50%,#f3ece1 70%);
+    background-size:200% 100%;animation:shim 1.6s linear infinite;
+  }
+  .shot.loaded .frame{aspect-ratio:auto;animation:none;background:none;}
+  .shot img{
+    width:100%;height:100%;display:block;object-fit:cover;
+    opacity:0;transition:opacity .4s;
+  }
+  .shot.loaded img{opacity:1;height:auto;}
+  @keyframes shim{from{background-position:200% 0}to{background-position:-200% 0}}
+
+  /* ================= 方案卡 ================= */
+  .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;}
+  .plan{
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px 22px;text-align:center;position:relative;
+    display:flex;flex-direction:column;
+  }
+  .plan.hot{border-color:var(--gold);box-shadow:0 6px 24px rgba(201,154,63,.16);}
+  .plan .badge{
+    position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+    background:var(--gold);color:#fff;font-size:.78rem;font-weight:700;
+    padding:3px 14px;border-radius:999px;white-space:nowrap;
+  }
+  .plan h3{margin:6px 0 4px;font-size:1.3rem;}
+  .plan .desc{color:var(--ink-dim);font-size:.9rem;margin:0 0 18px;min-height:3em;}
+  .plan .price{font-size:2.3rem;font-weight:900;color:var(--red);line-height:1;}
+  .plan .price small{font-size:1rem;font-weight:700;}
+  .plan .was{color:var(--ink-dim);text-decoration:line-through;font-size:.9rem;margin-top:6px;}
+  .plan ul{
+    list-style:none;padding:0;margin:18px 0 22px;text-align:left;font-size:.92rem;flex:1;
+  }
+  .plan li{padding-left:22px;position:relative;margin-bottom:6px;}
+  .plan li::before{content:"✓";position:absolute;left:0;color:var(--gold);font-weight:700;}
+
+  .btn{
+    display:block;width:100%;border:0;border-radius:999px;cursor:pointer;
+    background:var(--red);color:#fff;font-size:1.05rem;font-weight:700;
+    padding:13px 20px;font-family:inherit;transition:background .2s,transform .1s;
+  }
+  .btn:hover{background:var(--red-dark);}
+  .btn:active{transform:scale(.98);}
+  .btn.ghost{background:#fff;color:var(--red);border:1.5px solid var(--red);}
+  .btn.ghost:hover{background:#fbf1f0;}
+
+  /* ================= 加購 ================= */
+  .addons{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
+  .addon{
+    background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    padding:16px;text-align:center;display:flex;flex-direction:column;gap:8px;
+  }
+  .addon .nm{font-weight:700;font-size:.98rem;}
+  .addon .pr{color:var(--red);font-weight:800;}
+  .addon .btn{padding:9px;font-size:.9rem;margin-top:auto;}
+
+  /* ================= 說明區 ================= */
+  .notes{
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px 24px;
+  }
+  .notes ol{margin:0;padding-left:1.3em;}
+  .notes li{margin-bottom:8px;}
+
+  /* ================= 訂購表單 ================= */
+  #order{background:#fffdf8;border-top:1px solid var(--line);}
+  .cart-box{
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px 22px;margin-bottom:24px;
+  }
+  .cart-row{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 0;border-bottom:1px dashed var(--line);font-size:.95rem;
+  }
+  .cart-row:last-of-type{border-bottom:0;}
+  .cart-row .nm{flex:1;min-width:0;}
+  .qty{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .qty button{
+    width:30px;height:30px;border:0;background:#f7f1e6;color:var(--ink);
+    font-size:1rem;cursor:pointer;font-family:inherit;
+  }
+  .qty button:hover{background:#efe6d6;}
+  .qty span{min-width:34px;text-align:center;font-weight:700;font-size:.95rem;}
+  .cart-row .amt{width:82px;text-align:right;font-weight:700;}
+  .cart-empty{color:var(--ink-dim);text-align:center;padding:14px 0;}
+  .cart-total{
+    display:flex;justify-content:space-between;align-items:baseline;
+    border-top:2px solid var(--ink);margin-top:12px;padding-top:12px;font-weight:800;
+  }
+  .cart-total .big{font-size:1.6rem;color:var(--red);}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-weight:700;font-size:.93rem;margin-bottom:6px;}
+  .field label .req{color:var(--red);}
+  .field .hint{font-weight:400;color:var(--ink-dim);font-size:.85rem;}
+  .field input[type=text],.field input[type=tel],.field input[type=email],
+  .field textarea,.field select{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;
+    font-family:inherit;font-size:1rem;background:#fff;color:var(--ink);
+  }
+  .field input:focus,.field textarea:focus,.field select:focus{
+    outline:2px solid var(--gold);outline-offset:1px;border-color:var(--gold);
+  }
+  .field textarea{min-height:88px;resize:vertical;}
+  .radios{display:flex;flex-wrap:wrap;gap:10px;}
+  .radios label{
+    flex:1;min-width:130px;border:1px solid var(--line);border-radius:9px;
+    padding:11px;background:#fff;cursor:pointer;font-weight:400;text-align:center;margin:0;
+  }
+  .radios input{margin-right:6px;accent-color:var(--red);}
+  .radios label:has(input:checked){border-color:var(--red);background:#fbf1f0;font-weight:700;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:560px){.two-col{grid-template-columns:1fr;gap:0;}}
+
+  /* ================= 底部固定購物車列 ================= */
+  .bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:40;
+    background:rgba(255,255,255,.97);border-top:1px solid var(--line);
+    box-shadow:0 -4px 20px rgba(0,0,0,.07);
+    padding:12px 18px;display:flex;align-items:center;gap:14px;
+  }
+  .bar .info{flex:1;min-width:0;line-height:1.35;}
+  .bar .info .lbl{font-size:.8rem;color:var(--ink-dim);}
+  .bar .info .sum{font-size:1.35rem;font-weight:900;color:var(--red);}
+  .bar .btn{width:auto;padding:13px 30px;white-space:nowrap;}
+
+  /* ================= 送出後畫面 ================= */
+  .done{
+    position:fixed;inset:0;z-index:60;display:none;
+    align-items:center;justify-content:center;background:rgba(43,35,32,.6);padding:22px;
+  }
+  .done.open{display:flex;}
+  .done .card{
+    background:#fff;border-radius:18px;padding:38px 30px;text-align:center;max-width:420px;width:100%;
+  }
+  .done .mark{font-size:3rem;color:var(--gold);line-height:1;}
+  .done h3{margin:14px 0 10px;font-size:1.4rem;}
+  .done p{color:var(--ink-dim);margin:0 0 22px;font-size:.95rem;}
+
+  footer{
+    background:var(--red-dark);color:#f5e6d6;text-align:center;
+    padding:34px 18px;font-size:.9rem;
+  }
+  footer a{color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- ========== 頂部促銷條 ========== -->
+<div class="promo" id="promoBar"></div>
+
+<!-- ========== 圖片長條（滿版直落） ========== -->
+<div class="strip" id="imgStrip"></div>
+
+<!-- ========== 方案 ========== -->
+<section class="sec-wrap">
+  <div class="wrap">
+    <h2 class="sec">報名方案</h2>
+    <p class="sub">請選擇欲報名之項目，可複選、可調整數量</p>
+    <div class="plans" id="plans"></div>
+  </div>
+</section>
+
+<!-- ========== 加購 ========== -->
+<section class="sec-wrap" style="background:#fffdf8;border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <div class="wrap">
+    <h2 class="sec">加購項目</h2>
+    <p class="sub">隨法會一同祈福，數量有限</p>
+    <div class="addons" id="addons"></div>
+  </div>
+</section>
+
+<!-- ========== 注意事項 ========== -->
+<section class="sec-wrap">
+  <div class="wrap">
+    <h2 class="sec">報名須知</h2>
+    <p class="sub">報名前請詳閱以下說明</p>
+    <div class="notes"><ol id="notesList"></ol></div>
+  </div>
+</section>
+
+<!-- ========== 訂購表單 ========== -->
+<section class="sec-wrap" id="order">
+  <div class="wrap" style="max-width:720px;">
+    <h2 class="sec">填寫報名資料</h2>
+    <p class="sub">資料將用於製作疏文與牌位，請確實填寫</p>
+
+    <div class="cart-box">
+      <div id="cartList"></div>
+      <div class="cart-total">
+        <span>合計</span>
+        <span class="big">NT$ <span id="cartTotal">0</span></span>
+      </div>
+    </div>
+
+    <form id="orderForm" novalidate>
+      <div class="two-col">
+        <div class="field">
+          <label>報名人姓名 <span class="req">*</span></label>
+          <input type="text" name="name" required autocomplete="name">
+        </div>
+        <div class="field">
+          <label>聯絡手機 <span class="req">*</span></label>
+          <input type="tel" name="phone" required autocomplete="tel" placeholder="09xxxxxxxx">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Email <span class="hint">（寄送報名確認）</span></label>
+        <input type="email" name="email" autocomplete="email">
+      </div>
+
+      <div class="field">
+        <label>聯絡地址 <span class="hint">（寄送平安符與結緣品）</span></label>
+        <input type="text" name="address" autocomplete="street-address">
+      </div>
+
+      <div class="field">
+        <label>祈福／牌位資料 <span class="req">*</span></label>
+        <div class="hint" style="margin-bottom:6px;">請填寫姓名，多位請逐行分開填寫</div>
+        <textarea name="blessing" required placeholder="例：&#10;王小明&#10;王大華 闔家"></textarea>
+      </div>
+
+      <div class="field">
+        <label>付款方式 <span class="req">*</span></label>
+        <div class="radios" id="payRadios"></div>
+      </div>
+
+      <div class="field">
+        <label>備註</label>
+        <textarea name="note" placeholder="其他需要說明的事項"></textarea>
+      </div>
+
+      <button type="submit" class="btn" style="margin-top:8px;padding:16px;font-size:1.15rem;">
+        送出報名
+      </button>
+      <p style="text-align:center;color:var(--ink-dim);font-size:.85rem;margin-top:12px;">
+        送出後我們將以電話或 Email 與您確認
+      </p>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div id="footText"></div>
+</footer>
+
+<!-- ========== 底部購物車列 ========== -->
+<div class="bar">
+  <div class="info">
+    <div class="lbl">目前小計（<span id="barCount">0</span> 項）</div>
+    <div class="sum">NT$ <span id="barTotal">0</span></div>
+  </div>
+  <button class="btn" id="goOrder">前往報名</button>
+</div>
+
+<!-- ========== 送出成功畫面 ========== -->
+<div class="done" id="doneBox">
+  <div class="card">
+    <div class="mark">✽</div>
+    <h3>報名已送出</h3>
+    <p id="doneMsg"></p>
+    <button class="btn ghost" id="doneClose">關閉</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   ★★★★★  所有內容都在這個設定區，改這裡就好  ★★★★★
+   ============================================================================ */
+
+const SITE = {
+  promo:    "中元普渡法會開放報名中 ‧ 名額有限額滿為止",
+  title:    "中元普渡法會",   // 瀏覽器分頁上顯示的名稱
+  footer:   "報名專線：0000-000-000　│　服務時間 09:00 - 18:00",
+  doneMsg:  "感謝您的報名，我們會盡快與您聯繫確認。",
+};
+
+/* 圖片長條 —— 要加圖片就在這裡加一行（圖片檔跟本檔案放同一個資料夾） */
+const STRIP_IMAGES = [
+  "1.webp",
+  "2.webp",
+  "3.webp",
+  "4.webp",
+  // "5.webp",    ← 之後新增圖片就照這樣加一行
+];
+
+/* 報名方案 —— 要加方案就複製一整組 { ... } 貼在下面 */
+const PLANS = [
+  {
+    id:    "p1",
+    name:  "中元普渡法會",
+    desc:  "超薦歷代祖先、冤親債主，祈求闔家平安。",
+    price: 1200,          // 實際售價
+    was:   0,             // 原價（會顯示劃掉的價格）；不想顯示就填 0
+    hot:   true,          // true 會加上金框與角標
+    badge: "熱門報名",
+    items: [              // 方案包含什麼（可自由增減）
+      "法會牌位一位",
+      "疏文填寫與焚化",
+      "全程如儀誦經迴向",
+    ],
+  },
+  // ↓↓↓ 要再開其他方案，把下面這組的 // 拿掉並改內容 ↓↓↓
+  // {
+  //   id:"p2", name:"闔家祈福方案", desc:"全家一同祈福。",
+  //   price:0, was:0, hot:false, badge:"",
+  //   items:["項目一","項目二"],
+  // },
+];
+
+/* 加購項目 —— 不需要就把整個 [ ] 裡面清空，區塊會自動隱藏 */
+const ADDONS = [
+  // 下面是範例，請改成你實際的品項與價格，用不到就整行刪掉
+  { id:"a1", name:"平安符",     price:100 },
+  { id:"a2", name:"光明燈",     price:600 },
+  { id:"a3", name:"消災祈福金", price:300 },
+];
+
+/* 付款方式選項 */
+const PAYMENTS = ["銀行匯款", "現場繳費"];
+
+/* 報名須知 */
+const NOTES = [
+  "報名截止日：法會前三日截止，額滿提前結束。",
+  "牌位資料送出後如需更改，請於截止日前來電告知。",
+  "報名確認後將以電話或 Email 通知，並提供匯款資訊。",
+  "法會當日不克前來者，本堂將代為祈福迴向，功德相同。",
+];
+
+/* ============================================================================
+   ↓↓↓ 以下是程式邏輯，不用改 ↓↓↓
+   ============================================================================ */
+
+const $ = id => document.getElementById(id);
+const nt = n => n.toLocaleString('zh-TW');
+
+/* ---------- 套用文字設定 ---------- */
+$('promoBar').textContent = SITE.promo;
+$('footText').textContent = SITE.footer;
+$('doneMsg').textContent  = SITE.doneMsg;
+document.title = SITE.title;
+
+/* ---------- 圖片長條（捲到才載入，GIF 檔很大時很重要） ---------- */
+const stripWrap = $('imgStrip');
+STRIP_IMAGES.forEach(src => {
+  const box = document.createElement('div');
+  box.className = 'shot';
+  const frame = document.createElement('div');
+  frame.className = 'frame';
+  const img = document.createElement('img');
+  img.alt = SITE.title;
+  img.dataset.src = src;
+  img.addEventListener('load', () => box.classList.add('loaded'));
+  frame.appendChild(img);
+  box.appendChild(frame);
+  stripWrap.appendChild(box);
+});
+
+const io = new IntersectionObserver((entries, obs) => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const img = e.target.querySelector('img');
+    if (img && !img.src) img.src = img.dataset.src;
+    obs.unobserve(e.target);
+  });
+}, { rootMargin:'300px' });
+document.querySelectorAll('.shot').forEach(s => io.observe(s));
+
+/* ---------- 購物車狀態 ---------- */
+const cart = {};   // { 品項id: 數量 }
+const catalog = {};
+PLANS.forEach(p  => catalog[p.id] = p);
+ADDONS.forEach(a => catalog[a.id] = a);
+
+function add(id, n = 1){
+  cart[id] = Math.max(0, (cart[id] || 0) + n);
+  if (cart[id] === 0) delete cart[id];
+  render();
+}
+
+/* ---------- 方案卡 ---------- */
+$('plans').innerHTML = PLANS.map(p => `
+  <div class="plan${p.hot ? ' hot' : ''}">
+    ${p.hot && p.badge ? `<div class="badge">${p.badge}</div>` : ''}
+    <h3>${p.name}</h3>
+    <p class="desc">${p.desc || ''}</p>
+    <div class="price"><small>NT$</small> ${nt(p.price)}</div>
+    ${p.was ? `<div class="was">原價 NT$ ${nt(p.was)}</div>` : ''}
+    <ul>${(p.items || []).map(i => `<li>${i}</li>`).join('')}</ul>
+    <button class="btn" data-add="${p.id}">立即報名</button>
+  </div>
+`).join('');
+
+/* ---------- 加購 ---------- */
+if (ADDONS.length === 0) {
+  $('addons').closest('section').style.display = 'none';
+} else {
+  $('addons').innerHTML = ADDONS.map(a => `
+    <div class="addon">
+      <div class="nm">${a.name}</div>
+      <div class="pr">NT$ ${nt(a.price)}</div>
+      <button class="btn ghost" data-add="${a.id}">加購</button>
+    </div>
+  `).join('');
+}
+
+/* ---------- 須知、付款方式 ---------- */
+$('notesList').innerHTML = NOTES.map(n => `<li>${n}</li>`).join('');
+$('payRadios').innerHTML = PAYMENTS.map((p, i) => `
+  <label><input type="radio" name="pay" value="${p}"${i === 0 ? ' checked' : ''}>${p}</label>
+`).join('');
+
+/* ---------- 全站「加入」按鈕 ---------- */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-add]');
+  if (btn) { add(btn.dataset.add, 1); flash(btn); }
+
+  const q = e.target.closest('[data-qty]');
+  if (q) add(q.dataset.qty, Number(q.dataset.step));
+});
+
+function flash(btn){
+  const old = btn.textContent;
+  btn.textContent = '已加入 ✓';
+  setTimeout(() => btn.textContent = old, 900);
+}
+
+/* ---------- 重新繪製購物車 ---------- */
+function render(){
+  const ids = Object.keys(cart);
+  let total = 0, count = 0;
+
+  $('cartList').innerHTML = ids.length === 0
+    ? '<div class="cart-empty">尚未選擇項目</div>'
+    : ids.map(id => {
+        const it = catalog[id], n = cart[id], sum = it.price * n;
+        total += sum; count += n;
+        return `
+          <div class="cart-row">
+            <span class="nm">${it.name}</span>
+            <span class="qty">
+              <button data-qty="${id}" data-step="-1" aria-label="減少">−</button>
+              <span>${n}</span>
+              <button data-qty="${id}" data-step="1" aria-label="增加">＋</button>
+            </span>
+            <span class="amt">NT$ ${nt(sum)}</span>
+          </div>`;
+      }).join('');
+
+  $('cartTotal').textContent = nt(total);
+  $('barTotal').textContent  = nt(total);
+  $('barCount').textContent  = count;
+}
+render();
+
+/* ---------- 前往報名 ---------- */
+$('goOrder').addEventListener('click', () => {
+  $('order').scrollIntoView({ behavior:'smooth' });
+});
+
+/* ---------- 送出（目前只顯示成功畫面，資料不會真的寄出） ---------- */
+$('orderForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target;
+
+  if (Object.keys(cart).length === 0) {
+    alert('請先選擇報名方案');
+    window.scrollTo({ top:0, behavior:'smooth' });
+    return;
+  }
+  for (const el of f.querySelectorAll('[required]')) {
+    if (!el.value.trim()) {
+      alert('請填寫必填欄位');
+      el.focus();
+      return;
+    }
+  }
+
+  // 訂單內容整理好放在這裡，之後要串接收單服務時可直接使用
+  const order = {
+    items: Object.keys(cart).map(id => ({
+      name: catalog[id].name, price: catalog[id].price, qty: cart[id],
+    })),
+    total: Object.keys(cart).reduce((s, id) => s + catalog[id].price * cart[id], 0),
+    ...Object.fromEntries(new FormData(f)),
+  };
+  console.log('訂單內容：', order);   // 按 F12 可以看到
+
+  $('doneBox').classList.add('open');
+});
+
+$('doneClose').addEventListener('click', () => $('doneBox').classList.remove('open'));
+</script>
+
+</body>
+</html>
