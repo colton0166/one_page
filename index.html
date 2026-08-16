@@ -62,11 +62,11 @@
     background-size:200% 100%;animation:shim 1.6s linear infinite;
   }
   .shot.loaded .frame{aspect-ratio:auto;animation:none;background:none;}
-  .shot img{
+  .shot img,.shot video{
     width:100%;height:auto;display:block;
     opacity:0;transition:opacity .4s;
   }
-  .shot.loaded img{opacity:1;}
+  .shot.loaded img,.shot.loaded video{opacity:1;}
   @keyframes shim{from{background-position:200% 0}to{background-position:-200% 0}}
 
   /* ================= 方案卡 ================= */
@@ -335,16 +335,18 @@ const SITE = {
   doneMsg:  "感謝您的報名，我們會盡快與您聯繫確認。",
 };
 
-/* 圖片長條 —— 要加圖片就在這裡加一行（圖片檔跟本檔案放同一個資料夾） */
+/* 圖片長條 —— 要加就在這裡加一行（檔案跟本檔案放同一個資料夾）
+   支援圖片（.webp .png .jpg）和影片（.mp4 .webm）
+   影片會自動播放、靜音、無限循環，看起來就跟動圖一樣 */
 const STRIP_IMAGES = [
   "1.webp",
   "2.webp",
   "3.webp",
   "4.webp",
-  "5.webp",
-  "6.webp",
-  "7.webp",
-  // "8.webp",    ← 之後新增圖片就照這樣加一行
+  "5.mp4",        // 這段是影片（96 秒），會自動播放並循環
+  // 6、7 先移除，要放回來就把下面兩行前面的 // 拿掉
+  // "6.webp",
+  // "7.webp",
 ];
 
 /* 報名方案 —— 要加方案就複製一整組 { ... } 貼在下面 */
@@ -405,16 +407,34 @@ document.title = SITE.title;
 
 /* ---------- 圖片長條（捲到才載入，GIF 檔很大時很重要） ---------- */
 const stripWrap = $('imgStrip');
+const isVideo = src => /\.(mp4|webm|mov|m4v)$/i.test(src);
+
 STRIP_IMAGES.forEach(src => {
   const box = document.createElement('div');
   box.className = 'shot';
   const frame = document.createElement('div');
   frame.className = 'frame';
-  const img = document.createElement('img');
-  img.alt = SITE.title;
-  img.dataset.src = src;
-  img.addEventListener('load', () => box.classList.add('loaded'));
-  frame.appendChild(img);
+
+  let el;
+  if (isVideo(src)) {
+    // 影片：自動播放、靜音、循環（跟動圖看起來一樣，但檔案小很多）
+    el = document.createElement('video');
+    el.autoplay = true;
+    el.muted = true;          // 沒有靜音瀏覽器會擋掉自動播放
+    el.loop = true;
+    el.playsInline = true;    // iPhone 才不會跳全螢幕播放器
+    el.setAttribute('muted', '');
+    el.setAttribute('playsinline', '');
+    el.preload = 'none';
+    el.addEventListener('loadeddata', () => box.classList.add('loaded'));
+  } else {
+    el = document.createElement('img');
+    el.alt = SITE.title;
+    el.addEventListener('load', () => box.classList.add('loaded'));
+  }
+  el.dataset.src = src;
+
+  frame.appendChild(el);
   box.appendChild(frame);
   stripWrap.appendChild(box);
 });
@@ -422,8 +442,14 @@ STRIP_IMAGES.forEach(src => {
 const io = new IntersectionObserver((entries, obs) => {
   entries.forEach(e => {
     if (!e.isIntersecting) return;
-    const img = e.target.querySelector('img');
-    if (img && !img.src) img.src = img.dataset.src;
+    const el = e.target.querySelector('img, video');
+    if (el && !el.src) {
+      el.src = el.dataset.src;
+      if (el.tagName === 'VIDEO') {
+        el.preload = 'auto';
+        el.play().catch(() => {});   // 瀏覽器擋自動播放時不要噴錯
+      }
+    }
     obs.unobserve(e.target);
   });
 }, { rootMargin:'300px' });
