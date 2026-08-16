@@ -56,7 +56,7 @@
   .shot + .shot{margin-top:-1px;}
   .shot .frame{
     display:block;font-size:0;line-height:0;
-    aspect-ratio:640/1138;     /* 圖片還沒載入時的暫定高度（＝你目前圖片的比例） */
+    /* 載入前的暫定高度，實際比例由程式依每張圖片個別設定 */
     /* 圖片載入中的閃爍佔位，用深色才不會在黑底動畫之間閃一塊亮的 */
     background:linear-gradient(100deg,#0d0d0d 30%,#242424 50%,#0d0d0d 70%);
     background-size:200% 100%;animation:shim 1.6s linear infinite;
@@ -337,13 +337,19 @@ const SITE = {
 
 /* 圖片長條 —— 要加就在這裡加一行（檔案跟本檔案放同一個資料夾）
    支援圖片（.webp .png .jpg）和影片（.mp4 .webm）
-   影片會自動播放、靜音、無限循環，看起來就跟動圖一樣 */
+   影片會自動播放、靜音、無限循環，看起來就跟動圖一樣
+
+   寫法一：只寫檔名，會用下面 DEFAULT_RATIO 的比例當載入前的佔位高度
+   寫法二：檔案比例跟別人不一樣時，寫成 { src:"檔名", w:寬, h:高 }
+          這樣載入時版面才不會上下跳動                              */
+const DEFAULT_RATIO = "640/1138";   // 大部分圖片的比例
+
 const STRIP_IMAGES = [
   "1.webp",
   "2.webp",
   "3.webp",
   "4.webp",
-  "5.mp4",        // 這段是影片（96 秒），會自動播放並循環
+  { src:"5.webp", w:1024, h:1536 },   // 這張比例跟其他張不同
   // 6、7 先移除，要放回來就把下面兩行前面的 // 拿掉
   // "6.webp",
   // "7.webp",
@@ -409,11 +415,19 @@ document.title = SITE.title;
 const stripWrap = $('imgStrip');
 const isVideo = src => /\.(mp4|webm|mov|m4v)$/i.test(src);
 
-STRIP_IMAGES.forEach(src => {
+STRIP_IMAGES.forEach(item => {
+  // 兩種寫法都接受："檔名" 或 { src:"檔名", w:寬, h:高 }
+  const src = typeof item === 'string' ? item : item.src;
+
   const box = document.createElement('div');
   box.className = 'shot';
   const frame = document.createElement('div');
   frame.className = 'frame';
+  // 有給尺寸就用它的比例當佔位高度，沒給就用預設比例
+  frame.style.aspectRatio = (item.w && item.h) ? `${item.w}/${item.h}` : DEFAULT_RATIO;
+
+  // 載入完成後要把佔位比例清掉，改由檔案的真實高度決定
+  const done = () => { box.classList.add('loaded'); frame.style.aspectRatio = ''; };
 
   let el;
   if (isVideo(src)) {
@@ -426,11 +440,11 @@ STRIP_IMAGES.forEach(src => {
     el.setAttribute('muted', '');
     el.setAttribute('playsinline', '');
     el.preload = 'none';
-    el.addEventListener('loadeddata', () => box.classList.add('loaded'));
+    el.addEventListener('loadeddata', done);
   } else {
     el = document.createElement('img');
     el.alt = SITE.title;
-    el.addEventListener('load', () => box.classList.add('loaded'));
+    el.addEventListener('load', done);
   }
   el.dataset.src = src;
 
