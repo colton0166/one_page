@@ -45,22 +45,28 @@
   .strip{
     max-width:var(--stripw);   /* 電腦上不會拉到太寬；手機自動滿版 */
     margin:0 auto;
-    background:var(--paper);
-    font-size:0;               /* 消掉圖片之間的空隙 */
+    /* 底色要跟圖片邊緣接近（你的圖幾乎都是黑底），
+       萬一有一點點縫也看不出來。圖片換成亮色系時記得改這裡 */
+    background:#000;
+    font-size:0;line-height:0; /* 消掉圖片之間的空隙 */
   }
   .shot{display:block;}
+  /* 圖片放大後高度常帶小數點，交界處會露出 1px 白線；
+     讓每張往上疊 1px 就不會有縫（少 1px 完全看不出來） */
+  .shot + .shot{margin-top:-1px;}
   .shot .frame{
-    display:block;
+    display:block;font-size:0;line-height:0;
     aspect-ratio:640/1138;     /* 圖片還沒載入時的暫定高度（＝你目前圖片的比例） */
-    background:linear-gradient(100deg,#f3ece1 30%,#faf5ec 50%,#f3ece1 70%);
+    /* 圖片載入中的閃爍佔位，用深色才不會在黑底動畫之間閃一塊亮的 */
+    background:linear-gradient(100deg,#0d0d0d 30%,#242424 50%,#0d0d0d 70%);
     background-size:200% 100%;animation:shim 1.6s linear infinite;
   }
   .shot.loaded .frame{aspect-ratio:auto;animation:none;background:none;}
   .shot img{
-    width:100%;height:100%;display:block;object-fit:cover;
+    width:100%;height:auto;display:block;
     opacity:0;transition:opacity .4s;
   }
-  .shot.loaded img{opacity:1;height:auto;}
+  .shot.loaded img{opacity:1;}
   @keyframes shim{from{background-position:200% 0}to{background-position:-200% 0}}
 
   /* ================= 方案卡 ================= */
