@@ -203,7 +203,12 @@
   }
   .done .mark{font-size:3rem;color:var(--gold);line-height:1;}
   .done h3{margin:14px 0 10px;font-size:1.4rem;}
-  .done p{color:var(--ink-dim);margin:0 0 22px;font-size:.95rem;}
+  .done p{color:var(--ink-dim);margin:0 0 20px;font-size:.95rem;}
+  .done .btn{margin-bottom:10px;text-decoration:none;text-align:center;}
+  .done .btn:last-child{margin-bottom:0;}
+  .btn.line{background:#06C755;}          /* LINE 官方品牌綠 */
+  .btn.line:hover{background:#05a648;}
+  .done .tip{font-size:.82rem;margin:0 0 14px;}
 
   footer{
     background:var(--red-dark);color:#f5e6d6;text-align:center;
@@ -326,8 +331,11 @@
 <div class="done" id="doneBox">
   <div class="card">
     <div class="mark">✽</div>
-    <h3>報名已送出</h3>
+    <h3>最後一步</h3>
     <p id="doneMsg"></p>
+    <a class="btn line" id="lineSend" href="#" target="_blank" rel="noopener">用 LINE 傳送訂單</a>
+    <p class="tip">按下後會開啟官方帳號聊天室，訂單內容已幫你填好，直接按傳送即可</p>
+    <button class="btn ghost" id="copyOrder">複製訂單內容</button>
     <button class="btn ghost" id="doneClose">關閉</button>
   </div>
 </div>
@@ -341,7 +349,8 @@ const SITE = {
   promo:    "中元普渡法會開放報名中 ‧ 名額有限額滿為止",
   title:    "中元普渡法會",   // 瀏覽器分頁上顯示的名稱
   footer:   "報名專線：0000-000-000　│　服務時間 09:00 - 18:00",
-  doneMsg:  "感謝您的報名，我們會盡快與您聯繫確認。",
+  doneMsg:  "請把訂單傳給我們，才算完成報名。",
+  lineId:   "@256gqoek",     // 官方帳號 ID（要含 @）
 };
 
 /* 圖片長條 —— 要加就在這裡加一行（檔案跟本檔案放同一個資料夾）
@@ -594,7 +603,37 @@ $('goOrder').addEventListener('click', () => {
   $('order').scrollIntoView({ behavior:'smooth' });
 });
 
-/* ---------- 送出（目前只顯示成功畫面，資料不會真的寄出） ---------- */
+/* ---------- 把訂單整理成要傳到 LINE 的文字 ---------- */
+function buildOrderText(f){
+  const d  = Object.fromEntries(new FormData(f));
+  const ids = Object.keys(cart);
+  const total = ids.reduce((s, id) => s + catalog[id].price * cart[id], 0);
+
+  const L = [];
+  L.push(`【${SITE.title}報名】`, '');
+  L.push('▍報名項目');
+  ids.forEach(id => {
+    const it = catalog[id];
+    L.push(`${it.name} x${cart[id]}　NT$${nt(it.price * cart[id])}`);
+  });
+  L.push(`合計　NT$${nt(total)}`, '');
+
+  L.push('▍報名資料');
+  L.push(`姓名：${d.name || ''}`);
+  L.push(`電話：${d.phone || ''}`);
+  if (d.email)   L.push(`Email：${d.email}`);
+  if (d.address) L.push(`地址：${d.address}`);
+  L.push(`付款方式：${d.pay || ''}`);
+
+  if (d.blessing) L.push('', '▍祈福／牌位', d.blessing.trim());
+  if (d.note)     L.push('', '▍備註', d.note.trim());
+
+  return L.join('\n');
+}
+
+/* ---------- 送出：不會寄到伺服器，改成帶去 LINE 讓客人按傳送 ---------- */
+let orderText = '';
+
 $('orderForm').addEventListener('submit', e => {
   e.preventDefault();
   const f = e.target;
@@ -612,17 +651,35 @@ $('orderForm').addEventListener('submit', e => {
     }
   }
 
-  // 訂單內容整理好放在這裡，之後要串接收單服務時可直接使用
-  const order = {
-    items: Object.keys(cart).map(id => ({
-      name: catalog[id].name, price: catalog[id].price, qty: cart[id],
-    })),
-    total: Object.keys(cart).reduce((s, id) => s + catalog[id].price * cart[id], 0),
-    ...Object.fromEntries(new FormData(f)),
-  };
-  console.log('訂單內容：', order);   // 按 F12 可以看到
+  orderText = buildOrderText(f);
+
+  // LINE 官方格式：https://line.me/R/oaMessage/{帳號ID}/?{訊息}　兩段都要編碼
+  $('lineSend').href =
+    'https://line.me/R/oaMessage/' + encodeURIComponent(SITE.lineId) +
+    '/?' + encodeURIComponent(orderText);
 
   $('doneBox').classList.add('open');
+});
+
+/* ---------- 備援：複製訂單內容（LINE 開不起來時可以手動貼） ---------- */
+$('copyOrder').addEventListener('click', async e => {
+  const btn = e.currentTarget;
+  try {
+    await navigator.clipboard.writeText(orderText);
+  } catch {
+    // 舊瀏覽器或非 https 環境的備援做法
+    const ta = document.createElement('textarea');
+    ta.value = orderText;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
+  const old = btn.textContent;
+  btn.textContent = '已複製 ✓';
+  setTimeout(() => btn.textContent = old, 1500);
 });
 
 $('doneClose').addEventListener('click', () => $('doneBox').classList.remove('open'));
