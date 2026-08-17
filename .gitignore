@@ -9,3 +9,7 @@ __pycache__/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Node 套件與環境變數
+node_modules/
+.env

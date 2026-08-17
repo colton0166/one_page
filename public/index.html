@@ -279,8 +279,13 @@
       </div>
 
       <div class="field">
-        <label>Email <span class="hint">（寄送報名確認）</span></label>
-        <input type="email" name="email" autocomplete="email">
+        <label>Email <span class="req">*</span> <span class="hint">（報名確認信會寄到這裡）</span></label>
+        <input type="email" name="email" required autocomplete="email">
+      </div>
+
+      <!-- 蜜罐欄位：真人看不到也不會填，只有機器人會 -->
+      <div style="position:absolute;left:-9999px;" aria-hidden="true">
+        <label>請勿填寫<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
       </div>
 
       <div class="field">
@@ -637,12 +642,13 @@ function buildOrderText(f){
   return L.join('\n');
 }
 
-/* ---------- 送出：不會寄到伺服器，改成帶去 LINE 讓客人按傳送 ---------- */
+/* ---------- 送出：寄確認信給客人，同時把訂單帶到 LINE ---------- */
 let orderText = '';
 
-$('orderForm').addEventListener('submit', e => {
+$('orderForm').addEventListener('submit', async e => {
   e.preventDefault();
   const f = e.target;
+  const submitBtn = f.querySelector('button[type=submit]');
 
   if (Object.keys(cart).length === 0) {
     alert('請先選擇報名方案');
@@ -663,6 +669,42 @@ $('orderForm').addEventListener('submit', e => {
   $('lineSend').href =
     'https://line.me/R/oaMessage/' + encodeURIComponent(SITE.lineId) +
     '/?' + encodeURIComponent(orderText);
+
+  // 送到後端寄確認信
+  const d = Object.fromEntries(new FormData(f));
+  const payload = {
+    name:d.name, phone:d.phone, email:d.email, address:d.address,
+    pay:d.pay, blessing:d.blessing, note:d.note, website:d.website,
+    items: Object.keys(cart).map(id => ({
+      name: catalog[id].name, price: catalog[id].price, qty: cart[id],
+    })),
+  };
+
+  submitBtn.disabled = true;
+  const oldLabel = submitBtn.textContent;
+  submitBtn.textContent = '傳送中…';
+
+  let mailed = false, failMsg = '';
+  try {
+    const r = await fetch('/api/order', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json().catch(() => ({}));
+    mailed = r.ok && j.ok;
+    if (!mailed) failMsg = j.error || '信件寄送失敗';
+  } catch {
+    failMsg = '連線失敗';
+  }
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = oldLabel;
+
+  // 依寄信結果調整完成畫面的文字
+  $('doneMsg').textContent = mailed
+    ? `報名確認信已寄到 ${d.email}，請再用 LINE 傳送訂單以便我們盡快處理。`
+    : `${failMsg}。請改用下方 LINE 傳送訂單，我們一樣會收到。`;
 
   $('doneBox').classList.add('open');
 });

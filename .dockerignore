@@ -1,8 +1,14 @@
-# 這些不需要放進網站映像檔
-Dockerfile
-.dockerignore
+# 這些不需要放進映像檔
 .git
 .gitignore
+.gitattributes
+.dockerignore
+node_modules
 *.py
 *.gif
+*.png
+*.jpg
 *.md
+.env
+.env.example
+nginx.conf

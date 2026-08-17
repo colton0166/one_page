@@ -1,10 +1,12 @@
 """
-把資料夾裡的圖片轉成 WebP（動態 GIF 會轉成動態 WebP）。
+把圖片轉成 WebP（動態 GIF 會轉成動態 WebP）。
 
-用法：在這個資料夾按住 Shift 右鍵 →「在此處開啟 PowerShell」，然後輸入：
-    python convert-webp.py
+用法：把原始圖片（gif / png / jpg）丟在這個資料夾，
+      按住 Shift 右鍵 →「在此處開啟 PowerShell」，然後輸入：
+          python convert-webp.py
 
-之後新增圖片後再跑一次就好，已經轉過的會自動跳過。
+轉好的 .webp 會自動放進 public/ 資料夾（網站實際讀取的位置）。
+已經轉過的會自動跳過，新增圖片後再跑一次就好。
 
 想調整畫質，改下面的 QUALITY（數字越大越清晰、檔案越大）。
 """
@@ -23,7 +25,9 @@ MAX_WIDTH = 0         # 設成例如 800 可同時縮圖；0 = 不改變尺寸
 EXTS = (".gif", ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff")
 # ===============================================
 
-folder = os.path.dirname(os.path.abspath(__file__))
+folder = os.path.dirname(os.path.abspath(__file__))       # 放原始圖片的地方
+outdir = os.path.join(folder, "public")                   # 網站實際讀取的地方
+os.makedirs(outdir, exist_ok=True)
 
 
 def mb(path):
@@ -83,7 +87,7 @@ def main():
 
     for name in files:
         src = os.path.join(folder, name)
-        dst = os.path.join(folder, os.path.splitext(name)[0] + ".webp")
+        dst = os.path.join(outdir, os.path.splitext(name)[0] + ".webp")
 
         # 已經轉過而且原圖沒更新過 → 跳過
         if os.path.exists(dst) and os.path.getmtime(dst) >= os.path.getmtime(src):
@@ -112,7 +116,8 @@ def main():
     if done:
         print(f"總計 {total_before:.1f}MB → {total_after:.1f}MB"
               f"（省下 {(1 - total_after / total_before) * 100:.0f}%）")
-        print("\n記得把 index.html 裡 HERO_IMAGES 的副檔名改成 .webp")
+        print(f"\n輸出位置：{outdir}")
+        print("記得把 public/index.html 裡 STRIP_IMAGES 加上新的檔名")
 
 
 if __name__ == "__main__":

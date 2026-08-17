@@ -1,11 +1,21 @@
-# 用 nginx 提供靜態網頁，映像檔很小（約 50MB）
-FROM nginx:alpine
+# Node 伺服器：提供網頁 + 接收報名並寄信
+FROM node:20-alpine
 
-# 把資料夾內容整包放進網站根目錄
-# （.dockerignore 裡列的檔案不會被複製進來）
-COPY . /usr/share/nginx/html/
+WORKDIR /app
 
-# 把 nginx 設定搬到正確位置，不要留在網站根目錄被人看到
-RUN mv /usr/share/nginx/html/nginx.conf /etc/nginx/conf.d/default.conf
+# 先只複製套件清單，這樣改網頁時不用重新安裝套件，部署比較快
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
 
-EXPOSE 80
+# 伺服器程式與靜態網頁
+COPY server.js ./
+COPY public ./public
+
+# 不要用 root 執行
+USER node
+
+ENV NODE_ENV=production
+ENV PORT=3000
+EXPOSE 3000
+
+CMD ["node", "server.js"]

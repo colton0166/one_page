@@ -1,0 +1,14 @@
+{
+  "name": "pudu-page",
+  "version": "1.0.0",
+  "private": true,
+  "description": "中元普渡法會一頁式報名網頁",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "nodemailer": "^9.0.5"
+  }
+}
