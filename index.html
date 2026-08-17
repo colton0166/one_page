@@ -350,8 +350,11 @@ const SITE = {
   title:    "中元普渡法會",   // 瀏覽器分頁上顯示的名稱
   footer:   "報名專線：0000-000-000　│　服務時間 09:00 - 18:00",
   doneMsg:  "請把訂單傳給我們，才算完成報名。",
-  lineId:   "@256gqoek",     // 官方帳號 ID（要含 @）
+  lineId:   "@256gqoek",     // 官方帳號 ID（要含 @）。全站只有這裡要改
 };
+
+/* 官方帳號的「加好友／開啟聊天室」網址，由上面的 lineId 自動產生 */
+const LINE_ADD_URL = 'https://line.me/R/ti/p/' + encodeURIComponent(SITE.lineId);
 
 /* 圖片長條 —— 要加就在這裡加一行（檔案跟本檔案放同一個資料夾）
    支援圖片（.webp .png .jpg）和影片（.mp4 .webm）
@@ -373,7 +376,7 @@ const STRIP_IMAGES = [
     src: "3.webp",
     links: [
       // 圖片下方紅圈起來的「官方LINE:@256GQOEK」
-      { href:"https://line.me/R/ti/p/@256gqoek", label:"加入官方 LINE",
+      { href:LINE_ADD_URL, label:"加入官方 LINE",
         x:9.7, y:75.7, w:80.3, h:19.4 },
     ],
   },
