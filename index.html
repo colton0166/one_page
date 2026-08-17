@@ -50,7 +50,16 @@
     background:#000;
     font-size:0;line-height:0; /* 消掉圖片之間的空隙 */
   }
-  .shot{display:block;}
+  .shot{display:block;position:relative;}
+  /* 疊在圖片上的透明按鈕（例如圖片裡的 LINE 連結） */
+  .hotspot{
+    position:absolute;z-index:2;display:block;
+    border-radius:999px;
+    background:transparent;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .hotspot:hover{background:rgba(255,255,255,.10);}  /* 滑鼠移上去才有淡淡反應 */
+  .hotspot:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
   /* 圖片放大後高度常帶小數點，交界處會露出 1px 白線；
      讓每張往上疊 1px 就不會有縫（少 1px 完全看不出來） */
   .shot + .shot{margin-top:-1px;}
@@ -341,13 +350,24 @@ const SITE = {
 
    寫法一：只寫檔名，會用下面 DEFAULT_RATIO 的比例當載入前的佔位高度
    寫法二：檔案比例跟別人不一樣時，寫成 { src:"檔名", w:寬, h:高 }
-          這樣載入時版面才不會上下跳動                              */
+          這樣載入時版面才不會上下跳動
+
+   要在圖片上疊透明按鈕（例如圖裡印了 LINE 帳號），加 links：
+     { src:"3.webp", links:[ { href:"網址", x:9.7, y:75.7, w:80.3, h:19.4 } ] }
+   x/y 是按鈕左上角的位置，w/h 是寬高，四個都用「佔整張圖的百分比」    */
 const DEFAULT_RATIO = "640/1138";   // 大部分圖片的比例
 
 const STRIP_IMAGES = [
   "1.webp",
   "2.webp",
-  "3.webp",
+  {
+    src: "3.webp",
+    links: [
+      // 圖片下方紅圈起來的「官方LINE:@256GQOEK」
+      { href:"https://line.me/R/ti/p/@256gqoek", label:"加入官方 LINE",
+        x:9.7, y:75.7, w:80.3, h:19.4 },
+    ],
+  },
   "4.webp",
   { src:"5.webp", w:1024, h:1536 },   // 這張比例跟其他張不同
   // 6、7 先移除，要放回來就把下面兩行前面的 // 拿掉
@@ -450,6 +470,22 @@ STRIP_IMAGES.forEach(item => {
 
   frame.appendChild(el);
   box.appendChild(frame);
+
+  // 疊上透明按鈕（如果這張圖有設定 links）
+  (item.links || []).forEach(lk => {
+    const a = document.createElement('a');
+    a.className = 'hotspot';
+    a.href = lk.href;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.setAttribute('aria-label', lk.label || '連結');
+    a.style.left   = lk.x + '%';
+    a.style.top    = lk.y + '%';
+    a.style.width  = lk.w + '%';
+    a.style.height = lk.h + '%';
+    box.appendChild(a);
+  });
+
   stripWrap.appendChild(box);
 });
 
