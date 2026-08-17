@@ -175,6 +175,7 @@ app.post('/api/order', async (req, res) => {
       name:  clean(i.name, 60),
       price: Math.max(0, Math.min(1e7, Number(i.price) || 0)),
       qty:   Math.max(1, Math.min(999, parseInt(i.qty, 10) || 1)),
+      kind:  i.kind === 'plan' ? 'plan' : 'addon',
     })),
   };
   o.total = o.items.reduce((s, i) => s + i.price * i.qty, 0);
@@ -182,6 +183,10 @@ app.post('/api/order', async (req, res) => {
   if (!o.name || !o.phone)  return res.status(400).json({ ok:false, error:'姓名與電話為必填' });
   if (!isEmail(o.email))    return res.status(400).json({ ok:false, error:'Email 格式不正確' });
   if (o.items.length === 0) return res.status(400).json({ ok:false, error:'沒有選擇報名項目' });
+  // 加購牌位必須搭配方案，避免有人繞過網頁直接送單
+  if (!o.items.some(i => i.kind === 'plan')) {
+    return res.status(400).json({ ok:false, error:'加購項目需搭配報名方案' });
+  }
 
   // 通過驗證才計入流量限制，客人填錯欄位不會被誤鎖
   if (tooMany(ip)) {

@@ -393,7 +393,7 @@ const STRIP_IMAGES = [
 const PLANS = [
   {
     id:    "p1",
-    name:  "中元普渡法會",
+    name:  "中元普渡普桌一份",
     desc:  "超薦歷代祖先、冤親債主，祈求闔家平安。",
     price: 1200,          // 實際售價
     was:   0,             // 原價（會顯示劃掉的價格）；不想顯示就填 0
@@ -525,13 +525,29 @@ document.querySelectorAll('.shot').forEach(s => io.observe(s));
 /* ---------- 購物車狀態 ---------- */
 const cart = {};   // { 品項id: 數量 }
 const catalog = {};
-PLANS.forEach(p  => catalog[p.id] = p);
-ADDONS.forEach(a => catalog[a.id] = a);
+PLANS.forEach(p  => catalog[p.id] = { ...p, kind:'plan'  });
+ADDONS.forEach(a => catalog[a.id] = { ...a, kind:'addon' });
+
+const isPlan   = id => catalog[id].kind === 'plan';
+const hasPlan  = () => Object.keys(cart).some(isPlan);
 
 function add(id, n = 1){
+  // 規則：要先報名普桌方案，才能加購牌位
+  if (!isPlan(id) && n > 0 && !hasPlan()) {
+    alert('請先報名「' + PLANS[0].name + '」，才能加購牌位');
+    document.getElementById('plans').scrollIntoView({ behavior:'smooth', block:'center' });
+    return false;
+  }
+
   cart[id] = Math.max(0, (cart[id] || 0) + n);
   if (cart[id] === 0) delete cart[id];
+
+  // 方案被移除時，附帶的加購項目也一起清掉，避免留下孤兒訂單
+  if (isPlan(id) && !hasPlan()) {
+    Object.keys(cart).forEach(k => delete cart[k]);
+  }
   render();
+  return true;
 }
 
 /* ---------- 方案卡 ---------- */
@@ -560,6 +576,14 @@ if (ADDONS.length === 0) {
   `).join('');
 }
 
+/* 加購區的提示：還沒報名方案時顯示，報名後自動消失 */
+const addonLock = document.createElement('p');
+addonLock.id = 'addonLock';
+addonLock.style.cssText =
+  'text-align:center;color:var(--red);font-size:.9rem;margin:-14px 0 22px;font-weight:700;';
+addonLock.textContent = '※ 請先報名上方方案，才能加購牌位';
+$('addons').parentNode.insertBefore(addonLock, $('addons'));
+
 /* ---------- 須知、付款方式 ---------- */
 $('notesList').innerHTML = NOTES.map(n => `<li>${n}</li>`).join('');
 $('payRadios').innerHTML = PAYMENTS.map((p, i) => `
@@ -569,7 +593,7 @@ $('payRadios').innerHTML = PAYMENTS.map((p, i) => `
 /* ---------- 全站「加入」按鈕 ---------- */
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-add]');
-  if (btn) { add(btn.dataset.add, 1); flash(btn); }
+  if (btn && add(btn.dataset.add, 1)) flash(btn);   // 被規則擋下就不要顯示「已加入」
 
   const q = e.target.closest('[data-qty]');
   if (q) add(q.dataset.qty, Number(q.dataset.step));
@@ -606,6 +630,14 @@ function render(){
   $('cartTotal').textContent = nt(total);
   $('barTotal').textContent  = nt(total);
   $('barCount').textContent  = count;
+
+  // 還沒報名方案時，把加購區變灰並顯示提示
+  const unlocked = hasPlan();
+  const lock = $('addonLock');
+  if (lock) lock.style.display = unlocked ? 'none' : 'block';
+  document.querySelectorAll('.addon').forEach(el => {
+    el.style.opacity = unlocked ? '1' : '.45';
+  });
 }
 render();
 
@@ -676,7 +708,8 @@ $('orderForm').addEventListener('submit', async e => {
     name:d.name, phone:d.phone, email:d.email, address:d.address,
     pay:d.pay, blessing:d.blessing, note:d.note, website:d.website,
     items: Object.keys(cart).map(id => ({
-      name: catalog[id].name, price: catalog[id].price, qty: cart[id],
+      name: catalog[id].name, price: catalog[id].price,
+      qty: cart[id], kind: catalog[id].kind,
     })),
   };
 
